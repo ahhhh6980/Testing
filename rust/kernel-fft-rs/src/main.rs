@@ -355,32 +355,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     // let new_channels = fft_to_channels(&fft_channels, w as usize, h as usize)?;
     // let new_img = channels_to_image(&new_channels, w as usize, h as usize);
 
-    let kernel: Vec<Vec<f32>> = Vec::from([
-        vec![1.0, 2.0, 1.0],
-        vec![2.0, 4.0, 2.0],
-        vec![1.0, 2.0, 1.0],
-    ]);
-
-    // let mut kernel: Vec<Vec<f32>> = Vec::from([
-    //     vec![0.0, 0.0, 0.0],
-    //     vec![1.0, 0.0,-1.0],
-    //     vec![0.0, 0.0, 0.0],
+    // let kernel: Vec<Vec<f32>> = Vec::from([
+    //     vec![1.0, 2.0, 1.0],
+    //     vec![2.0, 4.0, 2.0],
+    //     vec![1.0, 2.0, 1.0],
     // ]);
 
-    let new_channels = apply_kernel(&channels, &kernel, w as usize, h as usize, 1.0 / 16.0)?;
-    let new_img = channels_to_image(&new_channels, w as usize, h as usize);
-
-    let channels = image_to_color_vec2s(&new_img, w, h)?;
-
-    let kernel: Vec<Vec<f32>> = Vec::from([
-        vec![0.0, 1.0, 0.0],
-        vec![1.0, -4.0, 1.0],
-        vec![0.0, 1.0, 0.0],
+    let mut kernel: Vec<Vec<f32>> = Vec::from([
+        vec![-1.0,-1.0,-1.0],
+        vec![-1.0, 8.0,-1.0],
+        vec![-1.0,-1.0,-1.0],
     ]);
 
     let new_channels = apply_kernel(&channels, &kernel, w as usize, h as usize, 1.0)?;
     let new_img = channels_to_image(&new_channels, w as usize, h as usize);
 
-    new_img.save("test.png")?;
+    // let channels = image_to_color_vec2s(&new_img, w, h)?;
+
+    // let kernel: Vec<Vec<f32>> = Vec::from([
+    //     vec![0.0, 1.0, 0.0],
+    //     vec![1.0, -4.0, 1.0],
+    //     vec![0.0, 1.0, 0.0],
+    // ]);
+
+    // let new_channels = apply_kernel(&channels, &kernel, w as usize, h as usize, 1.0)?;
+    // let new_img = channels_to_image(&new_channels, w as usize, h as usize);
+
+    new_img.save("test4.png")?;
     Ok(())
 }
