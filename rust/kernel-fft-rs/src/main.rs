@@ -2,11 +2,11 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-use image::{DynamicImage, ImageBuffer, Rgb, Rgba};
+use image::{, ImageBuffer, Rgb, };
 use rand::Rng;
 use rayon::{iter::ParallelIterator, slice::ParallelSliceMut};
 use rustdct::{Dct3, DctPlanner};
-use rustfft::{num_complex::Complex, Fft, FftDirection, FftPlanner};
+use rustfft::{num_complex::Complex, FftDirection, FftPlanner};
 use std::{
     error::Error,
     fs,
@@ -108,7 +108,7 @@ fn input_prompt<P: AsRef<Path>>(
     Ok((&files[prompt_number(bound, "", -1)? as usize]).clone())
 }
 
-struct FFT2Interface {
+pub struct FFT2Interface {
     fft_planner: FftPlanner<f32>,
     dct_planner: DctPlanner<f32>,
     size: (usize, usize),
@@ -116,6 +116,7 @@ struct FFT2Interface {
     channels: usize,
 }
 
+#[derive(Clone, Copy)]
 enum Align {
     Center,
     Front,
@@ -182,7 +183,7 @@ impl FFT2Interface {
         let (mut min, mut max) = (f32::MAX, f32::MIN);
         for channel in self.data.iter() {
             for e in channel {
-                let v = e.re;
+                let v = e.norm_sqr();
                 if v < min {
                     min = v;
                 }
@@ -191,7 +192,7 @@ impl FFT2Interface {
                 }
             }
         }
-        // let (min, max) = (min.sqrt(), max.sqrt());
+        let (min, max) = (min.sqrt(), max.sqrt());
         for j in 0..self.size.0 * self.size.1 {
             for i in 0..self.channels {
                 out_vec.push(
@@ -325,6 +326,7 @@ impl FFT2Interface {
 
         kernel.fft2(FftDirection::Forward);
         self.fft2(FftDirection::Forward);
+
         for channel in self.data.iter_mut() {
             for (var, kernel_var) in channel.iter_mut().zip(&kernel.data[0]) {
                 *var *= kernel_var;
@@ -339,8 +341,6 @@ impl FFT2Interface {
         let mut dirac = FFT2Interface::from_vec(&dirac, (3, 3), 1.0);
 
         dirac.pad((0, self.size.0 - 3), (0, self.size.1 - 3));
-        // kernel.pad((0, self.size.0 + 3), (0, self.size.1 + 3));
-        // self.pad((3, 3), (3, 3));
 
         dirac.fft2(FftDirection::Forward);
         kernel.fft2(FftDirection::Forward);
@@ -352,7 +352,7 @@ impl FFT2Interface {
             for ((var, kernel_var), dirac_var) in
                 channel.iter_mut().zip(&kernel.data[0]).zip(&dirac.data[0])
             {
-                *var *= dirac_var / (kernel_var + s);
+                *var *= (dirac_var) / (kernel_var + s);
             }
         }
 
@@ -380,8 +380,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             .iter()
             .map(|x| *x as f32)
             .collect();
-        let kernel: Vec<f32> = vec![0., 1., 0., 1., -4., 1., 0., 1., 0.];
-        let mut kernel = FFT2Interface::from_vec(&kernel, (3, 3), 1.0);
+        let kernel: Vec<f32> = vec![1., 2., 1., 2., 4., 2., 1., 2., 1.];
+        let mut kernel = FFT2Interface::from_vec(&kernel, (3, 3), 16.0);
         let mut fft_thing = FFT2Interface::from_vec(&data, (w as usize, h as usize), 1.0);
 
         let now = Instant::now();
@@ -393,7 +393,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             method = fft_thing.pad_to_square(Align::Front);
         }
         fft_thing.convolve(&mut kernel);
-        fft_thing.deconvolve(&mut kernel);
+        // fft_thing.remove_square_padding(method.clone());
+        fft_thing.crop((3, 3), (method.0 .0, method.0 .1));
+        // fft_thing.deconvolve(&mut kernel);
         // let c = 2f32.powf((w as f32).min(h as f32).log(2.0).floor());
         // fft_thing.crop((3, 3), method.0);
         // fft_thing.apply_kernel(&mut kernel);

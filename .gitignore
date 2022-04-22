@@ -1,2 +1,3 @@
-/rust/fracgen-gui
+/rust/fracgen-gui/target
+/rust/fracgen-gui/binaries
 /rust/kernel-fft-rs/target
